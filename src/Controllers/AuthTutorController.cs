@@ -8,12 +8,12 @@ namespace TutorifyServer.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class AuthStudentController : ControllerBase
+    public class AuthTutorController : ControllerBase
     {
-        private readonly IPersonRepository<Student> _repository;
+        private readonly IPersonRepository<Tutor> _repository;
         private readonly JwtService _jwtService;
 
-        public AuthStudentController(IPersonRepository<Student> repository,
+        public AuthTutorController(IPersonRepository<Tutor> repository,
             JwtService jwtService)
         {
             _repository = repository;
@@ -23,7 +23,7 @@ namespace TutorifyServer.Controllers
         [HttpPost("sign-up")]
         public IActionResult Register(RegisterDto dto)
         {
-            var student = new Student
+            var tutor = new Tutor
             {
                 Name = dto.Name,
                 Surname = dto.Surname,
@@ -31,25 +31,22 @@ namespace TutorifyServer.Controllers
                 Password = BCrypt.Net.BCrypt.HashPassword(dto.Password)
             };
 
-            return Created("success", _repository.Create(student));
+            return Created("success", _repository.Create(tutor));
         }
 
         [HttpPost("sign-in")]
         public IActionResult Login(LoginDto dto)
         {
-            Student? student = _repository.GetByEmail(dto.Email);
+            Tutor? tutor = _repository.GetByEmail(dto.Email);
 
-            if (student == null)
+            if (tutor == null) return BadRequest(new { message = "Invalid Credentials" });
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, tutor.Password))
             {
                 return BadRequest(new { message = "Invalid Credentials" });
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, student.Password))
-            {
-                return BadRequest(new { message = "Invalid Credentials" });
-            }
-
-            var jwt = _jwtService.Generate(student.Id);
+            var jwt = _jwtService.Generate(tutor.Id);
 
             Response.Cookies.Append("jwt", jwt, new CookieOptions
             {
